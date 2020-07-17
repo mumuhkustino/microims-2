@@ -10,19 +10,42 @@ def root():
 #API PRODUK - PRODUK DI GUDANG (Info Semua Product) dan API POST PRODUK DI GUDANG (Update Stok)
 @app.route("/api/products", methods=['GET', 'POST'])
 def products():
-    connection = None
-    cursor = None
-    try:
-        connection = db.connect()
-        cursor = connection.cursor(pymysql.cursors.DictCursor)
-        products = cursor.execute("SELECT product_id, product_name, product_quantity FROM product")
-        products = cursor.fetchall()
-        return make_response(jsonify(products)), 200
-    except Exception as e:
-        print(e)
-    finally:
-        cursor.close()
-        connection.close()
+    #API PRODUK - PRODUK DI GUDANG (Info Semua Product)
+    if request.method == 'GET':
+        connection = None
+        cursor = None
+        try:
+            connection = db.connect()
+            cursor = connection.cursor(pymysql.cursors.DictCursor)
+            products = cursor.execute("SELECT product_id, product_name, product_quantity FROM product")
+            products = cursor.fetchall()
+            return make_response(jsonify(products)), 200
+        except Exception as e:
+            print(e)
+        finally:
+            cursor.close()
+            connection.close()
+    # API POST PRODUK DI GUDANG (Update Stok)
+    elif request.method == 'POST':
+        if not request.json:
+            return make_response(jsonify(['Empty Request Body'])), 400
+        product_id = request.json.get('product_id', None)
+        product_quantity = request.json.get('product_quantity', None)
+        connection = None
+        cursor = None
+        try:
+            if product_id and product_quantity:
+                connection = db.connect()
+                cursor = connection.cursor(pymysql.cursors.DictCursor)
+                product = cursor.execute("UPDATE product SET product_quantity = %s WHERE product_id = %s", (product_quantity, product_id))
+                connection.commit()
+                return make_response(jsonify(['Successfully update product.'])), 200
+            return make_response(jsonify(['Wrong Request Body'])), 400
+        except Exception as e:
+            print(e)
+        finally:
+            cursor.close()
+            connection.close()
 
 #API GET PRODUK DI GUDANG (Info Stok)
 @app.route("/api/products/<int:product_id>", methods=['GET'])
